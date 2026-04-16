@@ -1,0 +1,256 @@
+[
+  {
+    "id": "1774986061.552644-0",
+    "speaker": "barista_planner",
+    "content": "Cafe open. Today's topic: Budget status: overspent — Overspent on dining out this week. Let's keep it focused — one insight at a time.",
+    "timestamp": "2026-03-31T19:41:01.552644+00:00",
+    "meta": {
+      "tool": "fetch_cafe_context",
+      "context_summary": "Budget status: overspent — Overspent on dining out this week. Savings change: -18.4. Top Reddit posts: r/coffee post \"[MOD] The Daily Question Thread\" (2 upvotes); r/coffee post \"[MOD] Inside Scoop - Ask the coffee industry\" (4 upvotes).",
+      "reddit_posts": [
+        {
+          "subreddit": "coffee",
+          "title": "[MOD] The Daily Question Thread",
+          "score": 2,
+          "url": "https://www.reddit.com/r/Coffee/comments/1s8j57z/mod_the_daily_question_thread/",
+          "num_comments": 11
+        },
+        {
+          "subreddit": "coffee",
+          "title": "[MOD] Inside Scoop - Ask the coffee industry",
+          "score": 4,
+          "url": "https://www.reddit.com/r/Coffee/comments/1s8scwf/mod_inside_scoop_ask_the_coffee_industry/",
+          "num_comments": 0
+        },
+        {
+          "subreddit": "coffee",
+          "title": "Blue Bottle sold again?",
+          "score": 62,
+          "url": "https://www.reddit.com/r/Coffee/comments/1s84d2z/blue_bottle_sold_again/",
+          "num_comments": 31
+        }
+      ],
+      "quest": false
+    }
+  },
+  {
+    "id": "1774986092.436779-1",
+    "speaker": "npc_pet_1",
+    "content": "We can tackle Budget status: overspent — Overspent on dining out this week together — one practical step makes all the difference.",
+    "timestamp": "2026-03-31T19:41:32.436779+00:00",
+    "meta": {
+      "quest": false,
+      "continued": true
+    }
+  },
+  {
+    "id": "1774986093.538175-2",
+    "speaker": "user_pet",
+    "content": "I'm a little anxious about Budget status: overspent — Overspent on dining out this week, but one small win today would help.",
+    "timestamp": "2026-03-31T19:41:33.538175+00:00",
+    "meta": {
+      "quest": false,
+      "continued": true
+    }
+  },
+  {
+    "id": "1774986094.077005-3",
+    "speaker": "barista_planner",
+    "content": "Eyes on the treasure: Budget status: overspent — Overspent on dining out this week is exactly where discipline pays off.",
+    "timestamp": "2026-03-31T19:41:34.077005+00:00",
+    "meta": {
+      "quest": false,
+      "continued": true
+    }
+  },
+  {
+    "id": "1774986094.339077-4",
+    "speaker": "npc_pet_1",
+    "content": "We can tackle Budget status: overspent — Overspent on dining out this week together — one practical step makes all the difference.",
+    "timestamp": "2026-03-31T19:41:34.339077+00:00",
+    "meta": {
+      "quest": false,
+      "continued": true
+    }
+  },
+  {
+    "id": "1774986094.816376-5",
+    "speaker": "npc_pet_2",
+    "content": "On Budget status: overspent — Overspent on dining out this week: guard essentials first, then cut one unnecessary spend right now.",
+    "timestamp": "2026-03-31T19:41:34.816376+00:00",
+    "meta": {
+      "quest": false,
+      "continued": true
+    }
+  },
+  {
+    "id": "1774986095.243976-6",
+    "speaker": "user_pet",
+    "content": "I'm a little anxious about Budget status: overspent — Overspent on dining out this week, but one small win today would help.",
+    "timestamp": "2026-03-31T19:41:35.243976+00:00",
+    "meta": {
+      "quest": false,
+      "continued": true
+    }
+  },
+  {
+    "id": "1774986095.545207-7",
+    "speaker": "barista_planner",
+    "content": "Eyes on the treasure: Budget status: overspent — Overspent on dining out this week is exactly where discipline pays off.",
+    "timestamp": "2026-03-31T19:41:35.545207+00:00",
+    "meta": {
+      "quest": false,
+      "continued": true
+    }
+  },
+  {
+    "id": "1774986095.76195-8",
+    "speaker": "npc_pet_1",
+    "content": "We can tackle Budget status: overspent — Overspent on dining out this week together — one practical step makes all the difference.",
+    "timestamp": "2026-03-31T19:41:35.761950+00:00",
+    "meta": {
+      "quest": false,
+      "continued": true
+    }
+  },
+  {
+    "id": "1774986095.978089-9",
+    "speaker": "npc_pet_2",
+    "content": "On Budget status: overspent — Overspent on dining out this week: guard essentials first, then cut one unnecessary spend right now.",
+    "timestamp": "2026-03-31T19:41:35.978089+00:00",
+    "meta": {
+      "quest": false,
+      "continued": true
+    }
+  },
+  {
+    "id": "1774986096.215067-10",
+    "speaker": "user_pet",
+    "content": "I'm a little anxious about Budget status: overspent — Overspent on dining out this week, but one small win today would help.",
+    "timestamp": "2026-03-31T19:41:36.215067+00:00",
+    "meta": {
+      "quest": false,
+      "continued": true
+    }
+  },
+  {
+    "id": "1774986096.408454-11",
+    "speaker": "barista_planner",
+    "content": "Eyes on the treasure: Budget status: overspent — Overspent on dining out this week is exactly where discipline pays off.",
+    "timestamp": "2026-03-31T19:41:36.408454+00:00",
+    "meta": {
+      "quest": false,
+      "continued": true
+    }
+  },
+  {
+    "id": "1774986096.610953-12",
+    "speaker": "npc_pet_1",
+    "content": "We can tackle Budget status: overspent — Overspent on dining out this week together — one practical step makes all the difference.",
+    "timestamp": "2026-03-31T19:41:36.610953+00:00",
+    "meta": {
+      "quest": false,
+      "continued": true
+    }
+  },
+  {
+    "id": "1774986096.801389-13",
+    "speaker": "npc_pet_2",
+    "content": "On Budget status: overspent — Overspent on dining out this week: guard essentials first, then cut one unnecessary spend right now.",
+    "timestamp": "2026-03-31T19:41:36.801389+00:00",
+    "meta": {
+      "quest": false,
+      "continued": true
+    }
+  },
+  {
+    "id": "1774986097.001947-14",
+    "speaker": "user_pet",
+    "content": "I'm a little anxious about Budget status: overspent — Overspent on dining out this week, but one small win today would help.",
+    "timestamp": "2026-03-31T19:41:37.001947+00:00",
+    "meta": {
+      "quest": false,
+      "continued": true
+    }
+  },
+  {
+    "id": "1774986107.420725-15",
+    "speaker": "barista_planner",
+    "content": "QUEST: Take one concrete action on Budget status: overspent — Overspent on dining out this week before the day ends.",
+    "timestamp": "2026-03-31T19:41:47.420725+00:00",
+    "meta": {
+      "quest": true,
+      "continued": true
+    }
+  },
+  {
+    "id": "1774986107.66295-16",
+    "speaker": "npc_pet_1",
+    "content": "We can tackle Budget status: overspent — Overspent on dining out this week together — one practical step makes all the difference.",
+    "timestamp": "2026-03-31T19:41:47.662950+00:00",
+    "meta": {
+      "quest": false,
+      "continued": true
+    }
+  },
+  {
+    "id": "1774986107.841098-17",
+    "speaker": "npc_pet_2",
+    "content": "On Budget status: overspent — Overspent on dining out this week: guard essentials first, then cut one unnecessary spend right now.",
+    "timestamp": "2026-03-31T19:41:47.841098+00:00",
+    "meta": {
+      "quest": false,
+      "continued": true
+    }
+  },
+  {
+    "id": "1774986108.030099-18",
+    "speaker": "user_pet",
+    "content": "I'm a little anxious about Budget status: overspent — Overspent on dining out this week, but one small win today would help.",
+    "timestamp": "2026-03-31T19:41:48.030099+00:00",
+    "meta": {
+      "quest": false,
+      "continued": true
+    }
+  },
+  {
+    "id": "1774986108.198487-19",
+    "speaker": "barista_planner",
+    "content": "Eyes on the treasure: Budget status: overspent — Overspent on dining out this week is exactly where discipline pays off.",
+    "timestamp": "2026-03-31T19:41:48.198487+00:00",
+    "meta": {
+      "quest": false,
+      "continued": true
+    }
+  },
+  {
+    "id": "1774986108.375296-20",
+    "speaker": "npc_pet_1",
+    "content": "We can tackle Budget status: overspent — Overspent on dining out this week together — one practical step makes all the difference.",
+    "timestamp": "2026-03-31T19:41:48.375296+00:00",
+    "meta": {
+      "quest": false,
+      "continued": true
+    }
+  },
+  {
+    "id": "1774986108.56805-21",
+    "speaker": "npc_pet_2",
+    "content": "On Budget status: overspent — Overspent on dining out this week: guard essentials first, then cut one unnecessary spend right now.",
+    "timestamp": "2026-03-31T19:41:48.568050+00:00",
+    "meta": {
+      "quest": false,
+      "continued": true
+    }
+  },
+  {
+    "id": "1774986108.749925-22",
+    "speaker": "user_pet",
+    "content": "I'm a little anxious about Budget status: overspent — Overspent on dining out this week, but one small win today would help.",
+    "timestamp": "2026-03-31T19:41:48.749925+00:00",
+    "meta": {
+      "quest": false,
+      "continued": true
+    }
+  }
+]

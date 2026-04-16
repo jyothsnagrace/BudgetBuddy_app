@@ -1,0 +1,55 @@
+[
+  {
+    "unexpected": true
+  },
+  {
+    "id": "1774982381.78225-1",
+    "speaker": "npc_pet_1",
+    "content": "We've totally got this — one cheerful, practical money choice can shift the whole week.",
+    "timestamp": "2026-03-31T18:39:41.782250+00:00",
+    "meta": {
+      "quest": false,
+      "continued": true
+    }
+  },
+  {
+    "id": "1774982381.78225-2",
+    "speaker": "barista_planner",
+    "content": "Stay disciplined and follow through on one concrete step now.",
+    "timestamp": "2026-03-31T18:39:41.782250+00:00",
+    "meta": {
+      "quest": false,
+      "continued": true
+    }
+  },
+  {
+    "id": "1774982381.78225-3",
+    "speaker": "npc_pet_2",
+    "content": "Guard essentials first, then cut one unnecessary spend right now — no hesitation.",
+    "timestamp": "2026-03-31T18:39:41.782250+00:00",
+    "meta": {
+      "quest": false,
+      "continued": true
+    }
+  },
+  {
+    "id": "1774982381.785147-4",
+    "speaker": "user_pet",
+    "content": "I'm a little anxious, but one small savings win today would really help me feel better.",
+    "timestamp": "2026-03-31T18:39:41.785147+00:00",
+    "meta": {
+      "quest": false,
+      "continued": true
+    }
+  },
+  {
+    "id": "1774982381.785147-5",
+    "speaker": "barista_planner",
+    "content": "QUEST: Move 20 gold into savings before the day ends.",
+    "timestamp": "2026-03-31T18:39:41.785147+00:00",
+    "meta": {
+      "quest": true,
+      "continued": true
+    }
+  }
+]

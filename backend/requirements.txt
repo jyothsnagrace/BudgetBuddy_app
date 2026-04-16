@@ -1,0 +1,48 @@
+# Python Backend Dependencies
+# Install: pip install -r requirements.txt
+
+# FastAPI & Server
+fastapi==0.110.0
+uvicorn[standard]==0.27.1
+python-multipart==0.0.9
+
+# Supabase Client
+supabase==2.28.0
+
+# LLM & AI
+google-generativeai==0.4.0
+groq==0.4.2
+openai>=1.0.0
+pillow==10.2.0
+pytesseract==0.3.10
+
+# RAG System
+langchain>=0.1.0
+langchain-openai>=0.0.5
+langchain-community>=0.0.10
+langchain-text-splitters>=0.0.1
+chromadb>=0.4.0
+beautifulsoup4>=4.12.0
+pdfminer.six>=20240706
+
+# Data Validation
+pydantic>=2.6.1
+pydantic-settings==2.1.0
+
+# API Requests
+httpx>=0.26
+requests==2.32.3
+
+# Utilities
+python-dotenv==1.0.1
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# Date handling
+python-dateutil==2.8.2
+
+# JSON Schema validation
+jsonschema==4.21.1
+
+# Caching
+cachetools>=5.3.2

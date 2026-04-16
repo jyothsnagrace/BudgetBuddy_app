@@ -1,0 +1,76 @@
+[
+  {
+    "id": "1776297560.265016-0",
+    "speaker": "barista_planner",
+    "content": "Cafe open. Today's topic: Budget status: balanced — Stayed close to budget with one impulse purchase. Let's keep it focused — one insight at a time.",
+    "timestamp": "2026-04-15T23:59:20.265016+00:00",
+    "meta": {
+      "tool": "fetch_cafe_context",
+      "context_summary": "Budget status: balanced — Stayed close to budget with one impulse purchase. Savings change: +6.5. Top Reddit posts: r/coffee post \"[MOD] The Daily Question Thread\" (12 upvotes); r/coffee post \"[MOD] Inside Scoop - Ask the coffee industry\" (14 upvotes).",
+      "reddit_posts": [
+        {
+          "subreddit": "coffee",
+          "title": "[MOD] The Daily Question Thread",
+          "score": 12,
+          "url": "https://www.reddit.com/r/Coffee/comments/1sm1m06/mod_the_daily_question_thread/",
+          "num_comments": 16
+        },
+        {
+          "subreddit": "coffee",
+          "title": "[MOD] Inside Scoop - Ask the coffee industry",
+          "score": 14,
+          "url": "https://www.reddit.com/r/Coffee/comments/1sle2gf/mod_inside_scoop_ask_the_coffee_industry/",
+          "num_comments": 13
+        },
+        {
+          "subreddit": "coffee",
+          "title": "How do you start getting into better coffee without going overboard?",
+          "score": 38,
+          "url": "https://www.reddit.com/r/Coffee/comments/1skrjjj/how_do_you_start_getting_into_better_coffee/",
+          "num_comments": 71
+        }
+      ],
+      "quest": false
+    }
+  },
+  {
+    "id": "1776297566.108684-1",
+    "speaker": "npc_pet_1",
+    "content": "We can tackle Budget status: balanced — Stayed close to budget with one impulse purchase together — one practical step makes all the difference.",
+    "timestamp": "2026-04-15T23:59:26.108684+00:00",
+    "meta": {
+      "quest": false,
+      "continued": true
+    }
+  },
+  {
+    "id": "1776297567.843003-2",
+    "speaker": "user_pet",
+    "content": "I'm a little anxious about Budget status: balanced — Stayed close to budget with one impulse purchase, but one small win today would help.",
+    "timestamp": "2026-04-15T23:59:27.843003+00:00",
+    "meta": {
+      "quest": false,
+      "continued": true
+    }
+  },
+  {
+    "id": "1776297569.230538-3",
+    "speaker": "barista_planner",
+    "content": "Eyes on the treasure: Budget status: balanced — Stayed close to budget with one impulse purchase is exactly where discipline pays off.",
+    "timestamp": "2026-04-15T23:59:29.230538+00:00",
+    "meta": {
+      "quest": false,
+      "continued": true
+    }
+  },
+  {
+    "id": "1776297574.95193-4",
+    "speaker": "npc_pet_1",
+    "content": "We can tackle Budget status: balanced — Stayed close to budget with one impulse purchase together — one practical step makes all the difference.",
+    "timestamp": "2026-04-15T23:59:34.951930+00:00",
+    "meta": {
+      "quest": false,
+      "continued": true
+    }
+  }
+]

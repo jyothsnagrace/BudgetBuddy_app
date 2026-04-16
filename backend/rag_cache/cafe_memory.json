@@ -1,0 +1,23 @@
+[
+  {
+    "id": "1774980670.017172-0",
+    "speaker": "barista_planner",
+    "content": "Esper: Cafe open. Ledger synced, and we start with one focused topic at a time.",
+    "timestamp": "2026-03-31T18:11:10.017172+00:00",
+    "meta": {
+      "tool": "fetch_budget_data",
+      "tool_output": "{\"user_id\": \"smoke_user\", \"generated_at\": \"2026-03-31T18:11:10.017172+00:00\", \"status\": \"overspent\", \"summary\": \"Overspent on dining out this week.\", \"recent_spending\": [{\"category\": \"Dining\", \"amount\": 74.5, \"trend\": \"up\"}, {\"category\": \"Coffee\", \"amount\": 32.0, \"trend\": \"up\"}, {\"category\": \"Groceries\", \"amount\": 48.2, \"trend\": \"steady\"}], \"savings_change\": -18.4}",
+      "quest": false
+    }
+  },
+  {
+    "id": "1774980920.595392-1",
+    "speaker": "npc_pet_1",
+    "content": "Penny: Building on that, we can absolutely handle Esper: Cafe open with one cheerful, practical money choice today.",
+    "timestamp": "2026-03-31T18:15:20.595392+00:00",
+    "meta": {
+      "quest": false,
+      "continued": true
+    }
+  }
+]
