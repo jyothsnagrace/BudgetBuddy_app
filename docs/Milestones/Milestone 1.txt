@@ -1,0 +1,7 @@
+Budget Buddy - an AI-driven personal finance assistant that helps users:
+
+Understand their spending behavior
+Create customized budget, savings, and debt-repayment plans
+Receive actionable insights and creative motivational outputs
+
+The system integrates structured financial data, vector databases, and Large Language Models (LLMs) to deliver personalized, explainable, and interactive financial guidance.
