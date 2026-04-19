@@ -30,6 +30,7 @@ wheels/
 MANIFEST
 
 # Virtual Environment
+.venv/
 venv/
 venv312/
 ENV/
@@ -112,5 +113,9 @@ credentials.json
 
 # Local evaluation artifacts
 data/llm_eval/
+
+# Runtime-generated cache (recreated on startup)
+backend/rag_cache/
+backend/chroma_db/
 
 .vercel
