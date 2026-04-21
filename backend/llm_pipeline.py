@@ -7,9 +7,13 @@ LLM #2: Normalization & Validation Agent
 import os
 import json
 import re
+import hashlib
+import asyncio
 from typing import Dict, Any, Optional, List
 from datetime import datetime, date
+from copy import deepcopy
 from jsonschema import validate, ValidationError
+from cachetools import TTLCache
 
 try:
     import google.generativeai as genai
@@ -35,11 +39,29 @@ except ImportError:
     RAG_AVAILABLE = False
     print("Warning: RAG system not available. Install required packages.")
 
+try:
+    from llama_cpp import Llama
+    LLAMA_CPP_AVAILABLE = True
+except ImportError:
+    Llama = None
+    LLAMA_CPP_AVAILABLE = False
+
 # Configure LLM providers
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "gemini").lower()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+GROQ_MODEL_FAST = os.getenv("GROQ_MODEL_FAST", GROQ_MODEL)
+GROQ_MODEL_ACCURATE = os.getenv("GROQ_MODEL_ACCURATE", GROQ_MODEL)
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+ENABLE_MODEL_CASCADE = os.getenv("ENABLE_MODEL_CASCADE", "true").lower() == "true"
+
+PARSE_CACHE_TTL_SECONDS = int(os.getenv("PARSE_CACHE_TTL_SECONDS", "900"))
+CHAT_CACHE_TTL_SECONDS = int(os.getenv("CHAT_CACHE_TTL_SECONDS", "180"))
+INFERENCE_CACHE_MAX_SIZE = int(os.getenv("INFERENCE_CACHE_MAX_SIZE", "512"))
+INFERENCE_BATCH_CONCURRENCY = int(os.getenv("INFERENCE_BATCH_CONCURRENCY", "4"))
+
+USE_LOCAL_QUANTIZED_MODEL = os.getenv("USE_LOCAL_QUANTIZED_MODEL", "false").lower() == "true"
+LOCAL_QUANTIZED_MODEL_PATH = os.getenv("LOCAL_QUANTIZED_MODEL_PATH", "")
 
 # Initialize Groq client
 groq_client = None
@@ -93,6 +115,25 @@ class LLMPipeline:
     
     def __init__(self):
         self.provider = LLM_PROVIDER
+        self.enable_model_cascade = ENABLE_MODEL_CASCADE
+        self.parse_cache = TTLCache(maxsize=INFERENCE_CACHE_MAX_SIZE, ttl=PARSE_CACHE_TTL_SECONDS)
+        self.chat_cache = TTLCache(maxsize=INFERENCE_CACHE_MAX_SIZE, ttl=CHAT_CACHE_TTL_SECONDS)
+        self.batch_concurrency = max(1, INFERENCE_BATCH_CONCURRENCY)
+        self.local_quantized_model = None
+        self.metrics: Dict[str, int] = {
+            "parse_requests": 0,
+            "parse_cache_hits": 0,
+            "parse_cache_misses": 0,
+            "parse_fast_path_hits": 0,
+            "chat_requests": 0,
+            "chat_cache_hits": 0,
+            "chat_cache_misses": 0,
+            "groq_calls": 0,
+            "gemini_calls": 0,
+            "quantized_calls": 0,
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+        }
         
         print(f"[LLMPipeline] DEBUG: LLM_PROVIDER env = '{os.getenv('LLM_PROVIDER')}'")
         print(f"[LLMPipeline] DEBUG: self.provider = '{self.provider}'")
@@ -123,6 +164,19 @@ class LLMPipeline:
             print(f"[LLMPipeline] Extraction model: {self.extraction_model._model_name}")
             self.normalization_model = genai.GenerativeModel('gemini-2.5-flash')
             self.chat_model = genai.GenerativeModel('gemini-2.5-flash')
+
+        if USE_LOCAL_QUANTIZED_MODEL and LOCAL_QUANTIZED_MODEL_PATH and LLAMA_CPP_AVAILABLE:
+            try:
+                self.local_quantized_model = Llama(
+                    model_path=LOCAL_QUANTIZED_MODEL_PATH,
+                    n_ctx=2048,
+                    n_gpu_layers=0,
+                    verbose=False,
+                )
+                print("[LLMPipeline] Quantized local model initialized")
+            except Exception as e:
+                print(f"[LLMPipeline] Failed to initialize quantized model: {e}")
+                self.local_quantized_model = None
 
         # Initialize RAG system
         self.rag = None
@@ -158,6 +212,154 @@ class LLMPipeline:
         except Exception as e:
             print(f"[LLM Health Check] Failed: {e}")
             return False
+
+    def _bump_metric(self, key: str, amount: int = 1):
+        self.metrics[key] = self.metrics.get(key, 0) + amount
+
+    def _make_cache_key(self, prefix: str, payload: Dict[str, Any]) -> str:
+        serialized = json.dumps(payload, sort_keys=True, default=str)
+        digest = hashlib.sha256(serialized.encode("utf-8")).hexdigest()
+        return f"{prefix}:{digest}"
+
+    def _complexity_score(self, text: str) -> float:
+        words = len(re.findall(r"\w+", text))
+        rule_hits = len(re.findall(r"\b(compare|analyz|forecast|strategy|plan|detailed|breakdown|why|trade-off)\b", text.lower()))
+        punctuation_bonus = 0.4 if any(char in text for char in [":", ";", "?"]) else 0.0
+        return (words / 24.0) + (rule_hits * 0.8) + punctuation_bonus
+
+    def _select_groq_model(self, route_text: str, purpose: str) -> str:
+        if not self.enable_model_cascade:
+            return self.groq_model
+
+        complexity = self._complexity_score(route_text)
+        if purpose == "parse" and complexity < 1.6:
+            return GROQ_MODEL_FAST
+        if purpose == "chat" and complexity < 2.4:
+            return GROQ_MODEL_FAST
+        return GROQ_MODEL_ACCURATE or self.groq_model
+
+    def _call_local_quantized(self, system_prompt: str, user_prompt: str, max_tokens: int) -> str:
+        if not self.local_quantized_model:
+            return ""
+
+        try:
+            response = self.local_quantized_model.create_chat_completion(
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                max_tokens=max_tokens,
+                temperature=0.2,
+            )
+            self._bump_metric("quantized_calls")
+            choice = (response.get("choices") or [{}])[0]
+            message = choice.get("message") or {}
+            return (message.get("content") or "").strip()
+        except Exception as e:
+            print(f"Quantized model call failed: {e}")
+            return ""
+
+    def _call_groq_chat(
+        self,
+        *,
+        route_text: str,
+        purpose: str,
+        system_prompt: str,
+        user_prompt: str,
+        temperature: float,
+        max_tokens: int,
+    ) -> str:
+        model_name = self._select_groq_model(route_text=route_text, purpose=purpose)
+        self._bump_metric("groq_calls")
+
+        try:
+            response = self.groq_client.chat.completions.create(
+                model=model_name,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+        except Exception:
+            # Fall back to configured default model if selected model is unavailable.
+            response = self.groq_client.chat.completions.create(
+                model=self.groq_model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+
+        usage = getattr(response, "usage", None)
+        if usage:
+            self._bump_metric("prompt_tokens", int(getattr(usage, "prompt_tokens", 0) or 0))
+            self._bump_metric("completion_tokens", int(getattr(usage, "completion_tokens", 0) or 0))
+
+        return (response.choices[0].message.content or "").strip()
+
+    def _try_rule_based_parse(self, text: str) -> Optional[Dict[str, Any]]:
+        amount_match = re.search(r"(?<!\w)\$?\s*(\d+(?:\.\d{1,2})?)", text)
+        if not amount_match:
+            return None
+
+        lowered = text.lower()
+        amount = float(amount_match.group(1))
+        category_rules = [
+            (r"\b(restaurant|food|coffee|grocery|lunch|dinner|breakfast)\b", "Food"),
+            (r"\b(uber|lyft|taxi|bus|train|gas|fuel|parking)\b", "Transportation"),
+            (r"\b(movie|concert|game|netflix|spotify)\b", "Entertainment"),
+            (r"\b(shopping|amazon|clothes|shoes|electronics)\b", "Shopping"),
+            (r"\b(rent|utility|utilities|internet|phone|bill)\b", "Bills"),
+            (r"\b(doctor|clinic|pharmacy|medicine|hospital)\b", "Healthcare"),
+            (r"\b(course|tuition|book|books|class|education)\b", "Education"),
+        ]
+
+        category = "Other"
+        for pattern, value in category_rules:
+            if re.search(pattern, lowered):
+                category = value
+                break
+
+        inferred_date = date.today()
+        if "yesterday" in lowered:
+            from datetime import timedelta
+            inferred_date = date.today() - timedelta(days=1)
+
+        description = re.sub(r"\$?\s*\d+(?:\.\d{1,2})?", "", text).strip(" .,-")
+        if not description:
+            description = "Expense"
+
+        return {
+            "amount": amount,
+            "category": category,
+            "description": description[:200],
+            "date": inferred_date.isoformat(),
+        }
+
+    def get_inference_metrics(self) -> Dict[str, Any]:
+        parse_hits = self.metrics.get("parse_cache_hits", 0)
+        parse_requests = self.metrics.get("parse_requests", 0)
+        chat_hits = self.metrics.get("chat_cache_hits", 0)
+        chat_requests = self.metrics.get("chat_requests", 0)
+
+        parse_hit_rate = (parse_hits / parse_requests) if parse_requests else 0.0
+        chat_hit_rate = (chat_hits / chat_requests) if chat_requests else 0.0
+
+        return {
+            "provider": self.provider,
+            "model_cascade_enabled": self.enable_model_cascade,
+            "quantized_model_enabled": bool(self.local_quantized_model),
+            "parse_cache_ttl_seconds": PARSE_CACHE_TTL_SECONDS,
+            "chat_cache_ttl_seconds": CHAT_CACHE_TTL_SECONDS,
+            "batch_concurrency": self.batch_concurrency,
+            "parse_cache_hit_rate": round(parse_hit_rate, 4),
+            "chat_cache_hit_rate": round(chat_hit_rate, 4),
+            "metrics": deepcopy(self.metrics),
+        }
     
     async def parse_expense(self, natural_text: str) -> Dict[str, Any]:
         """
@@ -167,6 +369,20 @@ class LLMPipeline:
         Stage 2: Normalize and validate
         """
         print(f"[parse_expense] DEBUG: provider = '{self.provider}'")
+        self._bump_metric("parse_requests")
+
+        cache_key = self._make_cache_key("parse", {"text": natural_text})
+        if cache_key in self.parse_cache:
+            self._bump_metric("parse_cache_hits")
+            return deepcopy(self.parse_cache[cache_key])
+        self._bump_metric("parse_cache_misses")
+
+        fast_path = self._try_rule_based_parse(natural_text)
+        if fast_path:
+            self._bump_metric("parse_fast_path_hits")
+            validated_fast_path = self._validation_stage(fast_path)
+            self.parse_cache[cache_key] = deepcopy(validated_fast_path)
+            return validated_fast_path
         
         # Stage 1: Extraction
         extracted_data = await self._extraction_stage(natural_text)
@@ -177,7 +393,28 @@ class LLMPipeline:
         # Stage 3: Validation
         validated_data = self._validation_stage(normalized_data)
         
+        self.parse_cache[cache_key] = deepcopy(validated_data)
         return validated_data
+
+    async def parse_expenses_batch(self, texts: List[str]) -> List[Dict[str, Any]]:
+        """Batch parse multiple natural-language expenses with bounded concurrency."""
+        if not texts:
+            return []
+
+        semaphore = asyncio.Semaphore(self.batch_concurrency)
+
+        async def _parse_one(index: int, text: str):
+            async with semaphore:
+                try:
+                    parsed = await self.parse_expense(text)
+                    return index, {"success": True, "parsed_data": parsed}
+                except Exception as e:
+                    return index, {"success": False, "error": str(e), "text": text}
+
+        tasks = [_parse_one(idx, txt) for idx, txt in enumerate(texts)]
+        resolved = await asyncio.gather(*tasks)
+        resolved.sort(key=lambda item: item[0])
+        return [item[1] for item in resolved]
     
     async def _extraction_stage(self, text: str) -> Dict[str, Any]:
         """
@@ -220,26 +457,27 @@ Example:
 Now extract from the given text:"""
         
         try:
+            quantized_response = ""
+            if self.local_quantized_model and self._complexity_score(text) < 1.4:
+                quantized_response = self._call_local_quantized(
+                    system_prompt="You extract expense fields and return valid JSON only.",
+                    user_prompt=prompt,
+                    max_tokens=256,
+                )
+
             if self.provider == "groq":
                 # Use Groq API
-                response = self.groq_client.chat.completions.create(
-                    model=self.groq_model,
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": "You are an expense extraction assistant. Extract structured data and return only valid JSON."
-                        },
-                        {
-                            "role": "user",
-                            "content": prompt
-                        }
-                    ],
+                llm_response = quantized_response or self._call_groq_chat(
+                    route_text=text,
+                    purpose="parse",
+                    system_prompt="You are an expense extraction assistant. Extract structured data and return only valid JSON.",
+                    user_prompt=prompt,
                     temperature=0.3,
                     max_tokens=256,
                 )
-                llm_response = response.choices[0].message.content
             else:
                 # Use Gemini API
+                self._bump_metric("gemini_calls")
                 response = self.extraction_model.generate_content(
                     prompt,
                     generation_config={
@@ -296,24 +534,17 @@ Return ONLY valid JSON, no other text."""
         try:
             if self.provider == "groq":
                 # Use Groq API
-                response = self.groq_client.chat.completions.create(
-                    model=self.groq_model,
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": "You are a data normalization assistant. Clean and validate data and return only valid JSON."
-                        },
-                        {
-                            "role": "user",
-                            "content": prompt
-                        }
-                    ],
+                llm_response = self._call_groq_chat(
+                    route_text=original_text,
+                    purpose="parse",
+                    system_prompt="You are a data normalization assistant. Clean and validate data and return only valid JSON.",
+                    user_prompt=prompt,
                     temperature=0.2,
                     max_tokens=256,
                 )
-                llm_response = response.choices[0].message.content
             else:
                 # Use Gemini API
+                self._bump_metric("gemini_calls")
                 response = self.normalization_model.generate_content(
                     prompt,
                     generation_config={
@@ -393,10 +624,27 @@ Return ONLY valid JSON, no other text."""
         chat_context: Optional[Dict] = None
     ) -> str:
         """Generate a grounded financial chat response using retrieved source context."""
+        self._bump_metric("chat_requests")
         username = user_context.get('username', 'friend')
         budget = float(user_context.get('budget') or 0)
         total_spent = float(user_context.get('total_spent') or 0)
         remaining = budget - total_spent if budget else 0
+
+        chat_cache_key = self._make_cache_key(
+            "chat",
+            {
+                "message": message,
+                "username": username,
+                "budget": budget,
+                "spent": total_spent,
+                "city": (col_data or {}).get("city", ""),
+                "chat_context": chat_context or {},
+            },
+        )
+        if chat_cache_key in self.chat_cache:
+            self._bump_metric("chat_cache_hits")
+            return self.chat_cache[chat_cache_key]
+        self._bump_metric("chat_cache_misses")
 
         rag_bundle = {"context": "", "sources": []}
         if self.rag and self.rag.enabled:
@@ -414,7 +662,7 @@ Return ONLY valid JSON, no other text."""
             'remaining': remaining,
         }
 
-        return self._generate_grounded_chat_response(
+        response = self._generate_grounded_chat_response(
             message=message,
             username=username,
             budget_info=budget_info,
@@ -422,6 +670,8 @@ Return ONLY valid JSON, no other text."""
             col_data=col_data,
             chat_context=chat_context,
         )
+        self.chat_cache[chat_cache_key] = response
+        return response
 
     def _generate_grounded_chat_response(
         self,
@@ -443,25 +693,27 @@ Return ONLY valid JSON, no other text."""
         )
 
         try:
+            if self.local_quantized_model and self._complexity_score(message) < 2.0:
+                quantized_text = self._call_local_quantized(
+                    system_prompt="You are BudgetBuddy, a practical financial assistant.",
+                    user_prompt=prompt,
+                    max_tokens=500,
+                )
+                if quantized_text:
+                    return quantized_text
+
             if groq_client:
-                response = groq_client.chat.completions.create(
-                    model=GROQ_MODEL,
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": "You are BudgetBuddy, a practical financial planning assistant. Use the provided sources and never role-play or answer with mascot filler text."
-                        },
-                        {
-                            "role": "user",
-                            "content": prompt,
-                        },
-                    ],
+                return self._call_groq_chat(
+                    route_text=message,
+                    purpose="chat",
+                    system_prompt="You are BudgetBuddy, a practical financial planning assistant. Use the provided sources and never role-play or answer with mascot filler text.",
+                    user_prompt=prompt,
                     temperature=0.2,
                     max_tokens=500,
                 )
-                return response.choices[0].message.content.strip()
 
             if GEMINI_API_KEY:
+                self._bump_metric("gemini_calls")
                 response = self.chat_model.generate_content(
                     prompt,
                     generation_config={

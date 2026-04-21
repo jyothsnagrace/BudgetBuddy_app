@@ -23,6 +23,7 @@ from llm_pipeline import LLMPipeline
 from function_calling import FunctionCallingSystem
 from receipt_parser import ReceiptParser
 from cost_of_living import CostOfLivingAPI
+from cost_projection import project_budgetbuddy_costs
 from database import DatabaseClient
 from auth import AuthManager
 from cafe_agents import run_cafe_continue_turn, run_cafe_group_chat
@@ -116,6 +117,29 @@ class ExpenseResponse(BaseModel):
 
 class NaturalLanguageInput(BaseModel):
     text: str = Field(..., min_length=1, max_length=500)
+
+
+class BatchNaturalLanguageInput(BaseModel):
+    texts: List[str] = Field(..., min_length=1, max_length=50)
+
+
+class CostProjectionRequest(BaseModel):
+    days_per_month: int = Field(default=30, ge=1, le=31)
+    active_users: int = Field(default=1000, ge=1)
+    expenses_per_user_per_day: float = Field(default=1.4, ge=0)
+    chat_turns_per_user_per_day: float = Field(default=2.0, ge=0)
+    parse_cache_hit_rate: float = Field(default=0.35, ge=0, le=0.99)
+    chat_cache_hit_rate: float = Field(default=0.45, ge=0, le=0.99)
+    parse_fast_path_rate: float = Field(default=0.30, ge=0, le=0.99)
+    accurate_route_rate: float = Field(default=0.20, ge=0, le=1.0)
+    avg_parse_prompt_tokens: int = Field(default=220, ge=1)
+    avg_parse_completion_tokens: int = Field(default=90, ge=1)
+    avg_chat_prompt_tokens: int = Field(default=650, ge=1)
+    avg_chat_completion_tokens: int = Field(default=220, ge=1)
+    peak_requests_per_second: float = Field(default=18, ge=0)
+    monthly_receipt_storage_gb: float = Field(default=8, ge=0)
+    monthly_rag_storage_gb: float = Field(default=1, ge=0)
+    monthly_db_growth_gb: float = Field(default=2, ge=0)
 
 class ChatMessage(BaseModel):
     message: str = Field(..., min_length=1, max_length=1000)
@@ -314,6 +338,32 @@ async def parse_expense_natural_language(
         raise HTTPException(
             status_code=422, 
             detail=f"Failed to parse expense: {str(e)}"
+        )
+
+
+@app.post("/api/parse-expense/batch")
+async def parse_expense_batch_natural_language(
+    input_data: BatchNaturalLanguageInput,
+    user_id: str = Depends(auth_manager.get_current_user)
+):
+    """
+    Batch parse natural-language expenses.
+    Uses bounded concurrency and shared inference cache.
+    """
+    try:
+        results = await llm_pipeline.parse_expenses_batch(input_data.texts)
+        success_count = sum(1 for item in results if item.get("success"))
+        return {
+            "success": True,
+            "count": len(results),
+            "success_count": success_count,
+            "failure_count": len(results) - success_count,
+            "results": results,
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Failed to batch parse expenses: {str(e)}"
         )
 
 # ============================================
@@ -663,6 +713,26 @@ async def get_insights(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/system/inference-metrics")
+async def get_inference_metrics(
+    user_id: str = Depends(auth_manager.get_current_user)
+):
+    """Expose cache efficiency and model-routing counters."""
+    return llm_pipeline.get_inference_metrics()
+
+
+@app.post("/api/system/cost-projection")
+async def get_cost_projection(
+    payload: CostProjectionRequest,
+    user_id: str = Depends(auth_manager.get_current_user)
+):
+    """Project monthly infrastructure and model API costs from workload assumptions."""
+    try:
+        return project_budgetbuddy_costs(payload.dict())
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Cost projection failed: {str(e)}")
 
 # ============================================
 # ERROR HANDLERS
