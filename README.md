@@ -18,6 +18,7 @@ A full-stack personal budgeting application that combines **Large Language Model
 ### ✨ Key Features
 
 - 🤖 **AI Café Companion** — Chat with Penny 🐧, Esper 🐉, Mochi 🐱, or Capy 🦫 for personalized budget advice
+- ☕ **Pet Community Cafe** — Turn-based gossip mode with one new agent message per click and per-user memory persistence
 - 📸 **Receipt OCR** — Upload receipt photos for automatic expense extraction via Gemini Vision + Tesseract
 - 💬 **Natural Language Input** — Type "Spent $45 on pizza" instead of filling forms
 - 📍 **Location-Aware Insights** — Compare spending across US cities using real-time cost-of-living data
@@ -80,16 +81,23 @@ flowchart TD
     Backend --> Router{Input Type?}
     Router -->|Text| NLP[NLP Parser - Groq LLaMA 3.1-8b]
     Router -->|Image| OCR[Receipt OCR - Gemini Vision]
+  Router -->|Cafe Turn| CafeAPI[/api/cafe/gossip]
     NLP --> FnCall[Function Calling - Extract Fields]
     OCR --> Norm[Normalization - Groq LLaMA 3.1-8b]
     Norm --> FnCall
     FnCall -->|Structured expense| DB[(Supabase PostgreSQL)]
 
-    Backend -->|Chat message| Orchestrator[Orchestrator Agent]
-    Orchestrator --> Advisor[Budget Advisor Agent]
-    Orchestrator --> CoL[Cost-of-Living Agent]
-    Orchestrator --> Memory[Conversation Memory]
-    Orchestrator -->|Response| Backend
+  CafeAPI --> CafeContext[fetch_cafe_context\nBudget + Reddit topics]
+  CafeAPI --> CafeEngine[run_cafe_continue_turn\nSpeaker rotation + persona prompts]
+  CafeEngine --> CafeLLM[OpenAI -> Anthropic -> Groq -> Mock fallback]
+  CafeEngine --> CafeMemory[(backend/rag_cache\nper-user cafe memory)]
+  CafeEngine -->|One new turn| Backend
+
+  Backend -->|Complex task| AgentExec[/api/agent/execute]
+  AgentExec --> Planner[Planner Agent]
+  Planner --> Executor[Executor Agent]
+  Executor --> Reviewer[Reviewer Agent]
+  Reviewer -->|Response| Backend
 
     DB -->|Expense history| Backend
     Backend -->|Response| Frontend
@@ -104,7 +112,9 @@ flowchart TD
 | **OCR Extraction** | Tesseract + Gemini 2.5 Flash Vision | Reads text from receipt images |
 | **Normalization** | Groq LLaMA 3.1-8b | Standardizes amounts, dates, categories |
 | **Function Calling** | Groq Tool Use | Structures output into DB-ready JSON |
-| **Café Companion** | Multi-agent (Groq) | Conversational budget advisor with memory |
+| **Pet Community Cafe** | Multi-agent persona engine | One-turn gossip generation with speaker rotation and persisted per-user memory |
+| **LLM Fallback Chain** | OpenAI -> Anthropic -> Groq -> Mock | Ensures cafe continuity if provider keys are missing or unavailable |
+| **Agent Orchestration** | Planner -> Executor -> Reviewer | Multi-step task decomposition, tool execution, and response synthesis |
 | **Cost-of-Living** | RapidAPI | City-specific financial context |
 | **Persistence** | Supabase PostgreSQL | Stores expenses, budgets, user profiles |
 
@@ -123,7 +133,7 @@ flowchart TD
 | **Cost Data** | RapidAPI | Real-time city cost-of-living |
 | **Auth** | JWT + Supabase | Secure user sessions |
 | **Deploy Frontend** | Vercel | Auto-deploy from `main` branch |
-| **Deploy Backend** | Railway + Nixpacks | Auto-deploy from `main` branch |
+| **Deploy Backend** | Railway + Railpack (default) | Auto-deploy from `backend` branch |
 
 ---
 
@@ -230,7 +240,17 @@ Choose your companion — each has a unique personality:
 
 Responses adapt based on companion personality, friendship level (0–100), and your current budget status.
 
-### 4. Analytics & Calendar
+### 4. Pet Community Cafe (Turn-Based)
+- Open the cafe panel and click **Visit Cafe** to start the session
+- Each click on **Continue Chat** generates exactly one new turn
+- Backend stores per-user cafe history so the conversation continues over time
+- Endpoints used by the feature:
+  - `POST /api/cafe/gossip`
+  - `GET /api/cafe/context/{user_id}`
+  - `GET /api/cafe/memory/{user_id}`
+  - `DELETE /api/cafe/memory/{user_id}`
+
+### 5. Analytics & Calendar
 - Hover over any calendar day to see expense breakdown
 - Category icons + amounts displayed inline
 - Monthly budget vs. actual comparison
@@ -244,6 +264,7 @@ Responses adapt based on companion personality, friendship level (0–100), and 
 | **Natural Language Parser** | ✅ | LLM-powered expense extraction |
 | **Receipt OCR** | ✅ | Gemini Vision + Tesseract |
 | **AI Café Companion** | ✅ | Multi-agent chat with memory |
+| **Pet Community Cafe** | ✅ | Turn-based one-message-per-click gossip flow with per-user memory |
 | **Cost-of-Living API** | ✅ | City-aware financial context |
 | **Budget Tracking** | ✅ | Category limits with alerts |
 | **Interactive Calendar** | ✅ | Hover tooltips with expense details |
@@ -269,7 +290,9 @@ BudgetBuddy/
 │   ├── auth.py                 # JWT authentication
 │   ├── database.py             # Supabase client
 │   ├── llm_pipeline.py         # LLM wrappers (Groq/Gemini)
+│   ├── agent_architecture.py   # Planner-Executor-Reviewer orchestration
 │   ├── cafe_agents.py          # Multi-agent companion
+│   ├── cafe_tools.py           # Cafe context + memory helpers
 │   ├── receipt_parser.py       # OCR pipeline
 │   ├── cost_of_living.py       # RapidAPI integration
 │   └── requirements.txt
@@ -279,25 +302,8 @@ BudgetBuddy/
 ├── docs/                       # Setup documentation
 ├── vercel.json                 # Vercel deploy config
 ├── railway.toml                # Railway deploy config
-├── nixpacks.toml               # Railway build config
 └── README.md
 ```
-
----
-
-## 🚢 Deployment
-
-### Backend → Railway
-- Auto-deploys from `main` branch via `railway.toml`
-- Build: Nixpacks auto-detects Python, installs `backend/requirements.txt`
-- Start: `python3 -m uvicorn main:app --host 0.0.0.0 --port $PORT`
-- Set all environment variables in Railway dashboard
-
-### Frontend → Vercel
-- Auto-deploys from `main` branch via `vercel.json`
-- Build: `npm run build` → outputs to `dist/`
-
----
 
 ## 🔒 Security
 
@@ -321,7 +327,10 @@ BudgetBuddy/
 | Document | Description |
 |----------|-------------|
 | [docs/SETUP.md](docs/SETUP.md) | Full installation & troubleshooting guide |
+| [docs/BudgetBuddy_Final_Report_Draft.docx](docs/BudgetBuddy_Final_Report_Draft.docx) | 4–5 page white-paper style report draft in Microsoft Word format |
 | [database/schema.sql](database/schema.sql) | PostgreSQL schema with RLS policies |
+
+ACM template reference: https://www.acm.org/publications/authors/submissions
 
 ---
 
@@ -345,6 +354,7 @@ BudgetBuddy/
 - **Database Tables**: 3 (users, expenses, budgets)
 - **LLM Providers**: 2 (Groq, Gemini)
 - **Companion Personalities**: 4
+- **Cafe Endpoints**: 4 (gossip, context, memory read, memory reset)
 - **Supported Cities**: 54 (via RapidAPI)
 
 ---

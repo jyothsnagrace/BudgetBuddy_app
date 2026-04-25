@@ -132,5 +132,35 @@
       "quest": false,
       "continued": true
     }
+  },
+  {
+    "id": "1777073687.23235-11",
+    "speaker": "barista_planner",
+    "content": "Eyes on the treasure: Budget status: overspent — Overspent on dining out this week is exactly where discipline pays off.",
+    "timestamp": "2026-04-24T23:34:47.232350+00:00",
+    "meta": {
+      "quest": false,
+      "continued": true
+    }
+  },
+  {
+    "id": "1777073692.967551-12",
+    "speaker": "npc_pet_1",
+    "content": "We can tackle Budget status: overspent — Overspent on dining out this week together — one practical step makes all the difference.",
+    "timestamp": "2026-04-24T23:34:52.967551+00:00",
+    "meta": {
+      "quest": false,
+      "continued": true
+    }
+  },
+  {
+    "id": "1777073697.865414-13",
+    "speaker": "npc_pet_2",
+    "content": "On Budget status: overspent — Overspent on dining out this week: guard essentials first, then cut one unnecessary spend right now.",
+    "timestamp": "2026-04-24T23:34:57.865414+00:00",
+    "meta": {
+      "quest": false,
+      "continued": true
+    }
   }
 ]
