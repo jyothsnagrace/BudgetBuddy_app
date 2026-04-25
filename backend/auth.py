@@ -11,7 +11,15 @@ from fastapi import HTTPException, Header
 
 # JWT Configuration
 # Prefer JWT_SECRET_KEY, but support legacy JWT_SECRET for backward compatibility.
-SECRET_KEY = os.getenv("JWT_SECRET_KEY") or os.getenv("JWT_SECRET") or "your-secret-key-change-in-production"
+_raw_secret = os.getenv("JWT_SECRET_KEY") or os.getenv("JWT_SECRET")
+if not _raw_secret:
+    if os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("VERCEL"):
+        raise RuntimeError(
+            "JWT_SECRET_KEY environment variable must be set in production. "
+            "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
+        )
+    _raw_secret = "dev-only-secret-not-for-production"
+SECRET_KEY = _raw_secret
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_DAYS = 30
 

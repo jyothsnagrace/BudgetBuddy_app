@@ -19,6 +19,11 @@ except Exception:
     _anthropic_sdk = None  # type: ignore
 
 try:
+    from groq import Groq
+except Exception:
+    Groq = None  # type: ignore
+
+try:
     from autogen import AssistantAgent, GroupChat, GroupChatManager, UserProxyAgent
     AUTOGEN_AVAILABLE = True
 except Exception:
@@ -33,6 +38,7 @@ except ImportError:
 # --- CONFIG ---
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 
 config_list = []
 if OPENAI_API_KEY:
@@ -163,6 +169,25 @@ def _call_anthropic(system_prompt: str, user_prompt: str) -> str:
         return ""
 
 
+def _call_groq(system_prompt: str, user_prompt: str) -> str:
+    if not GROQ_API_KEY or Groq is None:
+        return ""
+    try:
+        client = Groq(api_key=GROQ_API_KEY)
+        response = client.chat.completions.create(
+            model=os.getenv("CAFE_GROQ_MODEL", "llama-3.1-8b-instant"),
+            temperature=0.85,
+            max_tokens=90,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+        )
+        return (response.choices[0].message.content or "").strip()
+    except Exception:
+        return ""
+
+
 def _mock_single_turn(speaker: str, context_summary: str, turn_index: int) -> str:
     """
     Last-resort fallback. Uses context_summary so the topic varies
@@ -185,8 +210,8 @@ def _generate_turn(
     previous_content: str,
     context_summary: str,
     turn_index: int,
-) -> str:
-    """Generate one speaker bubble, trying OpenAI → Anthropic → mock fallback."""
+) -> tuple[str, str]:
+    """Generate one speaker bubble, trying OpenAI → Anthropic → Groq → mock fallback."""
     speaker_name = SPEAKER_NAME[speaker]
     persona = SPEAKER_PERSONA[speaker]
 
@@ -209,10 +234,17 @@ def _generate_turn(
     )
 
     model = os.getenv("AUTOGEN_MODEL", "gpt-4o-mini")
-    text = _call_openai(system_prompt, user_prompt, model) or _call_anthropic(system_prompt, user_prompt)
+    text = _call_openai(system_prompt, user_prompt, model)
+    provider = "openai" if text else ""
+    if not text:
+        text = _call_anthropic(system_prompt, user_prompt)
+        provider = "anthropic" if text else provider
+    if not text:
+        text = _call_groq(system_prompt, user_prompt)
+        provider = "groq" if text else provider
 
     if not text:
-        return _mock_single_turn(speaker, context_summary, turn_index)
+        return _mock_single_turn(speaker, context_summary, turn_index), "mock"
 
     # Take first line only, strip any accidental self-name prefix
     first_line = text.split("\n", 1)[0].strip()
@@ -220,7 +252,9 @@ def _generate_turn(
     if first_line.startswith(name_prefix):
         first_line = first_line[len(name_prefix):].strip()
 
-    return first_line or _mock_single_turn(speaker, context_summary, turn_index)
+    if not first_line:
+        return _mock_single_turn(speaker, context_summary, turn_index), "mock"
+    return first_line, provider or "unknown"
 
 # ---------------------------------------------------------------------------
 # Autogen group chat (optional path)
@@ -343,14 +377,14 @@ def run_cafe_continue_turn(
     next_speaker = available[len(history) % len(available)]
 
     previous = _clean_content(str(history[-1].get("content", "")))
-    content = _generate_turn(next_speaker, previous, context_summary, len(history))
+    content, provider = _generate_turn(next_speaker, previous, context_summary, len(history))
 
     message = {
         "id": f"{datetime.now(UTC).timestamp()}-{len(history)}",
         "speaker": next_speaker,
         "content": content,
         "timestamp": datetime.now(UTC).isoformat(),
-        "meta": {"quest": "quest:" in content.lower(), "continued": True},
+        "meta": {"quest": "quest:" in content.lower(), "continued": True, "llm_provider": provider},
     }
     save_cafe_memory(history + [message], memory_path)
     return [message]
@@ -377,7 +411,7 @@ def run_cafe_group_chat(
             "speaker": "barista_planner",
             "content": f"Cafe briefing started. Today's thread: \"{post_title}\".",
             "timestamp": datetime.now(UTC).isoformat(),
-            "meta": {"tool": "fetch_cafe_context", "context_summary": context_summary,
+            "meta": {"tool": "fetch_budget_data", "context_summary": context_summary,
                      "reddit_posts": posts},
         },
         {

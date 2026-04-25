@@ -28,6 +28,7 @@ from database import DatabaseClient
 from auth import AuthManager
 from cafe_agents import run_cafe_continue_turn, run_cafe_group_chat
 from cafe_tools import fetch_cafe_context, load_cafe_memory, save_cafe_memory
+from agent_architecture import BudgetBuddyAgentOrchestrator, build_budgetbuddy_tool_registry
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -76,6 +77,14 @@ receipt_parser = ReceiptParser()
 db = DatabaseClient()
 col_api = CostOfLivingAPI(db_client=db)
 auth_manager = AuthManager(db=db)  # Pass shared db instance
+agent_orchestrator = BudgetBuddyAgentOrchestrator(
+    build_budgetbuddy_tool_registry(
+        db=db,
+        llm_pipeline=llm_pipeline,
+        col_api=col_api,
+        function_system=function_system,
+    )
+)
 
 # ============================================
 # PYDANTIC MODELS
@@ -149,6 +158,13 @@ class ChatMessage(BaseModel):
 
 class CafeGossipRequest(BaseModel):
     user_id: str = Field(..., min_length=1, max_length=100)
+
+
+class AgentExecuteRequest(BaseModel):
+    task: str = Field(..., min_length=1, max_length=1500)
+    session_id: Optional[str] = Field(default=None, min_length=1, max_length=120)
+    context: Optional[Dict[str, Any]] = {}
+    companion: Optional[str] = Field(default=None, pattern='^(penguin|dragon|capybara|cat)$')
 
 class BudgetCreate(BaseModel):
     monthly_limit: float = Field(..., gt=0)
@@ -688,6 +704,42 @@ async def get_cities():
     return {
         "cities": col_api.get_supported_cities()
     }
+
+
+@app.post("/api/agent/execute")
+async def execute_agent_task(
+    payload: AgentExecuteRequest,
+    user_id: str = Depends(auth_manager.get_current_user)
+):
+    """Authenticated multi-step planner-executor task endpoint."""
+    try:
+        context = dict(payload.context or {})
+        if payload.companion:
+            context["companion"] = payload.companion
+
+        result = await agent_orchestrator.run_task(
+            user_id=user_id,
+            task=payload.task,
+            session_id=payload.session_id,
+            context=context,
+        )
+        return {"success": True, **result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Agent execution failed: {str(e)}")
+
+
+@app.get("/api/agent/session/{session_id}")
+async def get_agent_session(
+    session_id: str,
+    user_id: str = Depends(auth_manager.get_current_user)
+):
+    """Authenticated endpoint to inspect orchestrator session state."""
+    session = agent_orchestrator.get_session_state(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if session.get("user_id") != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized to access this session")
+    return {"success": True, "session": session}
 
 # ============================================
 # INSIGHTS & ANALYTICS
