@@ -111,44 +111,8 @@ backend/
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- **Node.js** 18+ and npm
-- **Python** 3.12+
-- **Supabase** account (free tier)
-- **API Keys** (free tiers available):
-  - Groq API (LLM inference)
-  - Google Gemini API (vision OCR)
-  - RapidAPI (cost-of-living data)
-
-### Installation
-
-```bash
-# 1. Clone the repository
-git clone https://github.com/uncc-llm/Spring-2026-DSBA-6010-Group-3-Budget-Buddy.git
-cd Spring-2026-DSBA-6010-Group-3-Budget-Buddy
-
-# 2. Install frontend dependencies
-npm install
-
-# 3. Set up Python environment
-python -m venv .venv
-.venv\Scripts\activate        # Windows
-# source .venv/bin/activate   # macOS/Linux
-pip install -r backend/requirements.txt
-
-# 4. Configure environment variables
-# Create backend/.env (see Environment Variables section below)
-
-# 5. Set up database
-# Run database/schema.sql in your Supabase SQL Editor
-
-# 6. Start the backend
-cd backend
-uvicorn main:app --reload --port 8000
-
-# 7. In a new terminal, start the frontend
-npm run dev
-```
+Setup and deployment instructions are in [docs/SETUP.md](docs/SETUP.md).
+For Railway and Vercel steps, see [docs/SETUP.md](docs/SETUP.md#production-deployment).
 
 ## 💡 Usage
 
@@ -209,54 +173,6 @@ Responses adapt based on companion personality, friendship level (0–100), and 
 | **JWT Authentication** | ✅ | Secure login + user profiles |
 | **Supabase RLS** | ✅ | Row-level security per user |
 | **Responsive Design** | ✅ | Mobile-friendly UI |
-
----
-
-## 📂 Project Structure
-
-```
-BudgetBuddy/
-├── src/                        # React frontend
-│   ├── app/
-│   │   ├── components/         # UI components
-│   │   └── App.tsx             # Main app component
-│   ├── config.ts               # API base URL config
-│   └── main.tsx                # Entry point
-├── backend/                    # FastAPI backend
-│   ├── main.py                 # App entry + all API routes
-│   ├── auth.py                 # JWT authentication
-│   ├── database.py             # Supabase client
-│   ├── llm_pipeline.py         # LLM wrappers (Groq/Gemini)
-│   ├── agent_architecture.py   # Planner-Executor-Reviewer orchestration
-│   ├── cafe_agents.py          # Multi-agent companion
-│   ├── cafe_tools.py           # Cafe context + memory helpers
-│   ├── receipt_parser.py       # OCR pipeline
-│   ├── cost_of_living.py       # RapidAPI integration
-│   └── requirements.txt
-├── database/
-│   └── schema.sql              # PostgreSQL schema + RLS
-├── supabase/                   # Supabase edge functions
-├── docs/                       # Setup documentation
-├── vercel.json                 # Vercel deploy config
-├── railway.toml                # Railway deploy config
-└── README.md
-```
-
-## 🔒 Security
-
-### Implemented
-✅ JWT authentication  
-✅ Row-level security (Supabase RLS)  
-✅ Input validation (Pydantic)  
-✅ Parameterized queries (no SQL injection)  
-✅ CORS whitelist for known origins  
-✅ `.env` excluded from git  
-
-### Production Recommendations
-- Enable HTTPS only (handled by Vercel/Railway)
-- Add rate limiting middleware
-- Rotate API keys periodically
-
 ---
 
 ## 📖 Documentation
