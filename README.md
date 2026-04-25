@@ -109,11 +109,6 @@ backend/
 
 ---
 
-## 🚀 Quick Start
-
-Setup and deployment instructions are in [docs/SETUP.md](docs/SETUP.md).
-For Railway and Vercel steps, see [docs/SETUP.md](docs/SETUP.md#production-deployment).
-
 ## 💡 Usage
 
 ### 1. Add an Expense — Natural Language
