@@ -73,68 +73,7 @@ backend/
 
 ## 🧠 LLM Architecture & Flow
 
-```mermaid
-flowchart TD
-  U[User] --> FE_Node
-
-  subgraph SG_FE[Frontend - Implemented]
-    FE_Node[React + TypeScript UI]
-    FE1[Expense Entry]
-    FE2[Receipt Upload]
-    FE3[Pet Community Cafe]
-    FE4[Budget Dashboard]
-  end
-
-  FE_Node --> API_Node
-
-  subgraph SG_API[Backend API - Implemented]
-    API_Node[FastAPI Service]
-    AP1[Auth + User Profile]
-    AP2[Expenses + Budgets + Calendar]
-    AP3[Cafe Endpoints]
-    AP4[Agent Execute Endpoint]
-  end
-
-  API_Node --> AIL_Node
-  API_Node --> DB_Node
-
-  subgraph SG_AIL[LLM and Agent Layer]
-    AIL_Node[Model Routing + Orchestration]
-    A1[Expense Parsing Pipeline - Implemented]
-    A2[Receipt OCR + Vision - Implemented]
-    A3[Cafe Multi-Agent Turn Engine - Implemented]
-    A4[Planner -> Executor -> Reviewer - Implemented]
-    A5[RAG Retrieval Path - Optional]
-    A6[Provider Fallback Chain - Optional]
-  end
-
-  subgraph SG_DB[Data Layer - Implemented]
-    DB_Node[Persistence Layer]
-    D1[(Supabase PostgreSQL)]
-    D2[(Cafe Memory Cache)]
-  end
-
-  AIL_Node --> EXT_Node
-
-  subgraph SG_EXT[External Services]
-    EXT_Node[Provider Integrations]
-    E1[Groq - Implemented]
-    E2[Gemini - Implemented]
-    E3[RapidAPI Cost of Living - Implemented]
-    E4[OpenAI - Optional]
-    E5[Anthropic - Optional]
-    E6[Reddit Context Fetch - Optional]
-  end
-
-  API_Node -. planned .-> PLAN_Node
-
-  subgraph SG_PLAN[Planned Components]
-    PLAN_Node[Roadmap]
-    P1[Calendar Integration Enhancements]
-    P2[Email and Push Notifications]
-    P3[Statement Import Pipeline]
-  end
-```
+![LLM Architecture and Flow](docs/LLM-Architecture-Work%20Flow.png)
 
 ### Stage Descriptions
 
